@@ -1,0 +1,62 @@
+// Day 09 — Power Query M Code: Sales_Cleaned
+// Paste this into Power BI Desktop: Home > Transform Data > Advanced Editor
+// (replace the file path in Source with your local path to sales_data_raw.csv)
+
+let
+    Source = Csv.Document(File.Contents("C:\path\to\sales_data_raw.csv"),
+        [Delimiter=",", Columns=11, Encoding=1252, QuoteStyle=QuoteStyle.None]),
+    PromotedHeaders = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),
+    ChangedTypes = Table.TransformColumnTypes(PromotedHeaders,{
+        {"OrderID", Int64.Type}, {"OrderDate", type text}, {"Region", type text},
+        {"SalesRep", type text}, {"Category", type text}, {"Product", type text},
+        {"Channel", type text}, {"PaymentMethod", type text},
+        {"Quantity", type number}, {"UnitPrice", type number}, {"Revenue", type number}
+    }),
+
+    // Step: Remove duplicate rows based on OrderID
+    RemovedDuplicates = Table.Distinct(ChangedTypes, {"OrderID"}),
+
+    // Step: Trim and clean text columns
+    TrimmedRegion = Table.TransformColumns(RemovedDuplicates, {{"Region", Text.Trim, type text}}),
+    TrimmedChannel = Table.TransformColumns(TrimmedRegion, {{"Channel", Text.Trim, type text}}),
+    TrimmedRep = Table.TransformColumns(TrimmedChannel, {{"SalesRep", Text.Trim, type text}}),
+
+    // Step: Standardize casing (Capitalize Each Word)
+    ProperRegion = Table.TransformColumns(TrimmedRep, {{"Region", Text.Proper, type text}}),
+    ProperChannel = Table.TransformColumns(ProperRegion, {{"Channel", Text.Proper, type text}}),
+
+    // Step: Custom column — parse mixed date formats into a single Date type
+    ParsedDates = Table.AddColumn(ProperChannel, "OrderDate_Parsed", each
+        try Date.FromText([OrderDate], "en-US")
+        otherwise try Date.FromText(
+            Text.Combine({
+                Text.Range([OrderDate], 6, 4), "-",
+                Text.Range([OrderDate], 0, 2), "-",
+                Text.Range([OrderDate], 3, 2)
+            }), "en-US")
+        otherwise null, type date),
+    RemovedOldDate = Table.RemoveColumns(ParsedDates, {"OrderDate"}),
+    RenamedDate = Table.RenameColumns(RemovedOldDate, {{"OrderDate_Parsed", "OrderDate"}}),
+
+    // Step: Replace blanks in Region/SalesRep with "Unknown"
+    ReplacedRegion = Table.ReplaceValue(RenamedDate, "", "Unknown", Replacer.ReplaceValue, {"Region"}),
+    ReplacedRegionNull = Table.ReplaceValue(ReplacedRegion, null, "Unknown", Replacer.ReplaceValue, {"Region"}),
+    ReplacedRep = Table.ReplaceValue(ReplacedRegionNull, null, "Unknown", Replacer.ReplaceValue, {"SalesRep"}),
+
+    // Step: Remove rows where Quantity AND UnitPrice are both blank (unrecoverable)
+    FilteredUnrecoverable = Table.SelectRows(ReplacedRep, each
+        not (([Quantity] = null) and ([UnitPrice] = null))),
+
+    // Step: Revenue_Check calculated column, compare against stated Revenue
+    AddedRevenueCheck = Table.AddColumn(FilteredUnrecoverable, "Revenue_Check", each
+        if [Quantity] <> null and [UnitPrice] <> null then [Quantity] * [UnitPrice] else null,
+        type number),
+    AddedMismatchFlag = Table.AddColumn(AddedRevenueCheck, "Revenue_Mismatch", each
+        if [Revenue_Check] <> null and Number.Abs([Revenue_Check] - [Revenue]) / [Revenue] > 0.01
+        then true else false, type logical)
+in
+    AddedMismatchFlag
+
+// Rename this query to "Sales_Cleaned" in the Queries pane, then Close & Apply.
+// Applied Steps pane on the right will show every step above as a named,
+// re-runnable step — that list is your audit trail.

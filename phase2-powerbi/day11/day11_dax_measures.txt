@@ -1,0 +1,34 @@
+// Day 11 — DAX Measures — Solution
+// Paste each into: Modeling tab > New Measure (with Sales_Cleaned table selected)
+
+Total Revenue = SUM(Sales_Cleaned[Revenue])
+
+Total Orders = DISTINCTCOUNT(Sales_Cleaned[OrderID])
+
+Average Order Value = DIVIDE([Total Revenue], [Total Orders])
+
+Total Quantity = SUM(Sales_Cleaned[Quantity])
+
+Revenue LM =
+CALCULATE(
+    [Total Revenue],
+    DATEADD(Dim_Date[Date], -1, MONTH)
+)
+
+Revenue MoM % = DIVIDE([Total Revenue] - [Revenue LM], [Revenue LM])
+
+High Value Orders =
+CALCULATE(
+    [Total Orders],
+    Sales_Cleaned[Revenue] > 500
+)
+
+// Notes:
+// - [Revenue LM] and [Revenue MoM %] require the Dim_Date relationship
+//   from Day 10 to be in place and marked as the active date table
+//   (Dim_Date table > ... > Mark as date table, using the [Date] column).
+// - DIVIDE() is used instead of the / operator throughout because it
+//   safely returns BLANK() instead of an error when the denominator is 0
+//   (e.g. Average Order Value when Total Orders is 0 in a filtered view).
+// - Verify each measure by dropping it into a Card visual on the report
+//   canvas — the number should update live as slicers are applied.
