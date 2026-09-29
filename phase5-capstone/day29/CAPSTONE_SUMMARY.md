@@ -45,7 +45,7 @@
 - `capstone_clean.sql` — SQL cleaning script (tested against SQLite)
 - `capstone_analysis.py` — Python analysis + feature engineering pipeline
 - `build_capstone_dashboard.py` — script that generates the dashboard
-- `capstone_dashboard.xlsx` — the final one-page BI dashboard
+- `capstone_dashboard.xlsx` — the final one-page BI dashboard 
   (built in Excel rather than Power BI's `.pbix` format, since `.pbix`
   is a proprietary binary that can only be produced inside Power BI
   Desktop itself — the Power BI *logic* for an equivalent dashboard is
