@@ -51,8 +51,4 @@
   Desktop itself — the Power BI *logic* for an equivalent dashboard is
   documented throughout `phase2-powerbi/`)
 
-## Why this matters
-This is the project to lead with in interviews or on a portfolio site —
-it demonstrates the complete stack in one artifact: a database layer,
-a reproducible code-driven analysis layer, and a business-facing output,
-all built from the same messy raw file everyone starts from on Day 01.
+
