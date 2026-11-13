@@ -1,4 +1,4 @@
-# Day 29 — Capstone Project: SQL → Python → BI Dashboard
+# Day 29 — Capstone Project: 
 
 ## Goal
 Build one end-to-end pipeline that touches every skill from the last
